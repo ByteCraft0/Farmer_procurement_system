@@ -9,7 +9,7 @@ create table users (
     created_at timestamp default current_timestamp
 );
 
-create table farmers (
+create table if not exists farmers (
     id int auto_increment primary key,
     user_id int unique not null,
     farmer_id varchar(30) unique not null,
@@ -20,7 +20,7 @@ create table farmers (
         on delete cascade
 );
 
-create table centres (
+create table if not exists centres (
     id int auto_increment primary key,
     name varchar(100) not null,
     location varchar(250) not null,
@@ -29,7 +29,7 @@ create table centres (
     created_at timestamp default current_timestamp
 );
 
-create table slots (
+create table if not exists slots (
     id int auto_increment primary key,
     centre_id int not null,
     slot_date date not null,
@@ -43,7 +43,7 @@ create table slots (
         on delete cascade
 );
 
-create table bookings (
+create table if not exists bookings (
     id int auto_increment primary key,
     farmer_id int not null,
     slot_id int not null,
@@ -65,7 +65,7 @@ create table bookings (
     unique key uniq_farmer_slot (farmer_id, slot_id)
 );
 
-create table procurements (
+create table if not exists procurements (
     id int auto_increment primary key,
     booking_id int unique not null,
     quantity decimal(10,2),
@@ -84,7 +84,7 @@ create table procurements (
         on delete restrict
 );
 
-create table payments (
+create table if not exists payments (
     id int auto_increment primary key,
     booking_id int unique not null,
     amount decimal(15,2) not null,
@@ -105,7 +105,7 @@ create table payments (
         on delete restrict,
     constraint chk_amount_non_negative check (amount >= 0)
 );
-create table notifications (
+create table if not exists notifications (
     id int auto_increment primary key,
     user_id int not null,
     booking_id int null,
