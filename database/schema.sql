@@ -1,6 +1,6 @@
 create database if not exists fpms_db;
 use fpms_db;
-create table if not exhists users (
+create table if not exists users (
     id int auto_increment primary key,
     name varchar(200) not null,
     phone varchar(15) unique not null,
