@@ -1,133 +1,205 @@
-create database if not exists fpms_db;
-use fpms_db;
-create table if not exists users (
-    id int auto_increment primary key,
-    name varchar(200) not null,
-    phone varchar(15) unique not null,
-    password varchar(250) not null,
-    role enum('farmer', 'staff', 'admin') default 'farmer',
-    created_at timestamp default current_timestamp
-);
+-- MySQL dump 10.13  Distrib 8.0.46, for Win64 (x86_64)
+--
+-- Host: 127.0.0.1    Database: fpms_db
+-- ------------------------------------------------------
+-- Server version	26.7.0
 
-create table if not exists farmers (
-    id int auto_increment primary key,
-    user_id int unique not null,
-    farmer_id varchar(30) unique not null,
-    village varchar(100),
-    address varchar(250),
-    foreign key (user_id)
-        references users(id)
-        on delete cascade
-);
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!50503 SET NAMES utf8 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+SET @MYSQLDUMP_TEMP_LOG_BIN = @@SESSION.SQL_LOG_BIN;
+SET @@SESSION.SQL_LOG_BIN= 0;
 
-create table if not exists centres (
-    id int auto_increment primary key,
-    name varchar(100) not null,
-    location varchar(250) not null,
-    capacity int not null,
-    contact varchar(15),
-    created_at timestamp default current_timestamp
-);
+--
+-- GTID state at the beginning of the backup 
+--
 
-create table if not exists slots (
-    id int auto_increment primary key,
-    centre_id int not null,
-    slot_date date not null,
-    start_time time not null,
-    end_time time not null,
-    capacity int not null,
-    booked int default 0,
-    status enum('available', 'full', 'closed') default 'available',
-    foreign key (centre_id)
-        references centres(id)
-        on delete cascade
-);
+SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ 'b009722f-a6ec-11f1-b773-98bd80059591:1-257';
 
-create table if not exists bookings (
-    id int auto_increment primary key,
-    farmer_id int not null,
-    slot_id int not null,
-    token_number varchar(30) not null,
-    booking_time timestamp default current_timestamp,
-    status enum(
-        'booked',
-        'waiting',
-        'serving',
-        'completed',
-        'cancelled'
-    ) default 'booked',
-    foreign key (farmer_id)
-        references farmers(id)
-        on delete cascade,
-    foreign key (slot_id)
-        references slots(id)
-        on delete cascade,
-    unique key uniq_farmer_slot (farmer_id, slot_id)
-);
+--
+-- Table structure for table `bookings`
+--
 
-create table if not exists procurements (
-    id int auto_increment primary key,
-    booking_id int unique not null,
-    quantity decimal(10,2),
-    unit varchar(20) default 'kg',
-    status enum(
-        'pending',
-        'in_progress',
-        'completed',
-        'rejected'
-    ) default 'pending',
-    updated_at timestamp
-        default current_timestamp
-        on update current_timestamp,
-    foreign key (booking_id)
-        references bookings(id)
-        on delete restrict
-);
+DROP TABLE IF EXISTS `bookings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `bookings` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `farmer_id` int NOT NULL,
+  `slot_id` int NOT NULL,
+  `token_number` varchar(30) NOT NULL,
+  `booking_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `status` enum('booked','waiting','serving','completed','cancelled') DEFAULT 'booked',
+  `call_alert_sent` tinyint(1) DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_farmer_slot` (`farmer_id`,`slot_id`),
+  KEY `slot_id` (`slot_id`),
+  CONSTRAINT `bookings_ibfk_1` FOREIGN KEY (`farmer_id`) REFERENCES `farmers` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `bookings_ibfk_2` FOREIGN KEY (`slot_id`) REFERENCES `slots` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-create table if not exists payments (
-    id int auto_increment primary key,
-    booking_id int unique not null,
-    amount decimal(15,2) not null,
-    status enum(
-        'pending',
-        'processing',
-        'paid',
-        'failed'
-    ) default 'pending',
-    payment_method enum(
-        'cash',
-        'bank_transfer',
-        'upi'
-    ),
-    payment_time timestamp null,
-    foreign key (booking_id)
-        references bookings(id)
-        on delete restrict,
-    constraint chk_amount_non_negative check (amount >= 0)
-);
-create table if not exists notifications (
-    id int auto_increment primary key,
-    user_id int not null,
-    booking_id int null,
-    type enum(
-        'sms',
-        'app'
-    ) not null,
-    title varchar(150),
-    message varchar(500) not null,
-    status enum(
-        'pending',
-        'sent',
-        'failed'
-    ) default 'pending',
-    sent_at timestamp null,
-    created_at timestamp default current_timestamp,
+--
+-- Table structure for table `centres`
+--
 
-    foreign key(user_id)
-        references users(id)
-        on delete cascade,
+DROP TABLE IF EXISTS `centres`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `centres` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `location` varchar(250) NOT NULL,
+  `capacity` int NOT NULL,
+  `contact` varchar(15) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `current_token` int DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-    foreign key (booking_id)
-        references bookings(id)
-        on delete set null
-);
+--
+-- Table structure for table `farmers`
+--
+
+DROP TABLE IF EXISTS `farmers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `farmers` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `farmer_id` varchar(30) NOT NULL,
+  `village` varchar(100) DEFAULT NULL,
+  `address` varchar(250) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_id` (`user_id`),
+  UNIQUE KEY `farmer_id` (`farmer_id`),
+  CONSTRAINT `farmers_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `notifications`
+--
+
+DROP TABLE IF EXISTS `notifications`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `notifications` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `booking_id` int DEFAULT NULL,
+  `type` enum('sms','app') NOT NULL,
+  `title` varchar(150) DEFAULT NULL,
+  `message` varchar(500) NOT NULL,
+  `status` enum('pending','sent','failed') DEFAULT 'pending',
+  `sent_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `booking_id` (`booking_id`),
+  CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `notifications_ibfk_2` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `payments`
+--
+
+DROP TABLE IF EXISTS `payments`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `payments` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `booking_id` int NOT NULL,
+  `amount` decimal(15,2) NOT NULL,
+  `status` enum('pending','processing','paid','failed') DEFAULT 'pending',
+  `payment_method` enum('cash','bank_transfer','upi') DEFAULT NULL,
+  `payment_time` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `booking_id` (`booking_id`),
+  CONSTRAINT `payments_ibfk_1` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `chk_amount_non_negative` CHECK ((`amount` >= 0))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `procurements`
+--
+
+DROP TABLE IF EXISTS `procurements`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `procurements` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `booking_id` int NOT NULL,
+  `quantity` decimal(10,2) DEFAULT NULL,
+  `unit` varchar(20) DEFAULT 'kg',
+  `status` enum('pending','in_progress','completed','rejected') DEFAULT 'pending',
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `booking_id` (`booking_id`),
+  CONSTRAINT `procurements_ibfk_1` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `slots`
+--
+
+DROP TABLE IF EXISTS `slots`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `slots` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `centre_id` int NOT NULL,
+  `slot_date` date NOT NULL,
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `capacity` int NOT NULL,
+  `booked` int DEFAULT '0',
+  `status` enum('available','full','closed') DEFAULT 'available',
+  PRIMARY KEY (`id`),
+  KEY `centre_id` (`centre_id`),
+  CONSTRAINT `slots_ibfk_1` FOREIGN KEY (`centre_id`) REFERENCES `centres` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=66 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `users`
+--
+
+DROP TABLE IF EXISTS `users`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `users` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(200) NOT NULL,
+  `phone` varchar(15) NOT NULL,
+  `password` varchar(250) NOT NULL,
+  `role` enum('farmer','staff','admin') DEFAULT 'farmer',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `phone` (`phone`)
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2026-09-20  3:24:15
